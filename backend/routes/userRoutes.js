@@ -1,0 +1,32 @@
+import express from 'express';
+import {
+  getUserProfile,
+  updateUserProfile,
+  addToCart,
+  getCart,
+  removeFromCart,
+  clearCart,
+  addToWishlist,
+  getWishlist,
+  removeFromWishlist,
+  getUsers,
+  deleteUser,
+} from '../controllers/userController.js';
+import { protect, admin } from '../middleware/authMiddleware.js';
+
+const router = express.Router();
+
+router.route('/').get(protect, admin, getUsers);
+router.route('/profile').get(protect, getUserProfile).put(protect, updateUserProfile);
+router.route('/cart')
+  .get(protect, getCart)
+  .post(protect, addToCart)
+  .delete(protect, clearCart);
+router.route('/cart/:productId').delete(protect, removeFromCart);
+router.route('/wishlist')
+  .get(protect, getWishlist)
+  .post(protect, addToWishlist);
+router.route('/wishlist/:productId').delete(protect, removeFromWishlist);
+router.route('/:id').delete(protect, admin, deleteUser);
+
+export default router;
