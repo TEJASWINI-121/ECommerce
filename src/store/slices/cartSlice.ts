@@ -283,11 +283,22 @@ export const cartSlice = createSlice({
         state.isError = true;
         state.message = action.payload as string;
       })
+      .addCase(addToCart.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+        state.message = '';
+      })
       .addCase(addToCart.fulfilled, (state, action) => {
+        state.isLoading = false;
         state.items = action.payload;
         // Save to localStorage using the imported function
         const { saveCartToStorage: saveCart } = require('../../utils/localStorage');
         saveCart(action.payload);
+      })
+      .addCase(addToCart.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload as string;
       })
       .addCase(updateCartItem.fulfilled, (state, action) => {
         state.items = action.payload;

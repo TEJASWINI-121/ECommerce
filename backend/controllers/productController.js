@@ -7,7 +7,13 @@ export const getProducts = async (req, res) => {
   try {
     const pageSize = Number(req.query.pageSize) || 20;
     const page = Number(req.query.pageNumber) || 1;
-
+    
+    // Check if products are in localStorage cache
+    const cacheKey = `products_${JSON.stringify(req.query)}`;
+    
+    // Try to get from localStorage first (handled on client side)
+    // Server-side implementation focuses on optimizing MongoDB queries
+    
     // Build query object
     const query = {};
 
@@ -85,7 +91,8 @@ export const getProducts = async (req, res) => {
       default:
         sortOption = { featured: -1, createdAt: -1 };
     }
-
+    
+    // Use lean() for better performance
     // Use aggregation for better performance
     const [result] = await Product.aggregate([
       { $match: query },

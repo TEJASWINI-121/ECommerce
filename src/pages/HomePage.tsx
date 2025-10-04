@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
@@ -17,6 +17,8 @@ import { RootState, AppDispatch } from '../store/store';
 import { getProducts, getTopProducts } from '../store/slices/productSlice';
 import ProductCard from '../components/ProductCard';
 import Loader from '../components/Loader';
+import { useInView } from 'react-intersection-observer';
+import { PRODUCT_CATEGORIES, getCategoryDisplayName, sortProductsInCategory } from '../utils/categoryManager';
 
 
 const categories = [
@@ -81,9 +83,43 @@ const HomePage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
   const [showFilters, setShowFilters] = useState(false);
   const [currentBanner, setCurrentBanner] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
   const dispatch = useDispatch<AppDispatch>();
   const { products, topProducts, isLoading, page, pages, count } = useSelector((state: RootState) => state.products);
+  
+  // Organize products by categories
+  const organizedProducts = React.useMemo(() => {
+    if (!products.length) return [];
+    
+    // If a category is selected, just return the filtered products
+    if (selectedCategory) {
+      return sortProductsInCategory(products, 'popularity');
+    }
+    
+    // Otherwise, group products by category for better organization
+    const productsByCategory: any[] = [];
+    
+    // Create category headers and product groups
+    PRODUCT_CATEGORIES.forEach(category => {
+      const categoryProducts = products.filter(p => p.category.toLowerCase() === category.toLowerCase());
+      
+      if (categoryProducts.length > 0) {
+        // Add category header
+        productsByCategory.push({
+          isHeader: true,
+          category,
+          displayName: getCategoryDisplayName(category)
+        });
+        
+        // Add sorted products
+        const sortedProducts = sortProductsInCategory(categoryProducts, 'popularity');
+        productsByCategory.push(...sortedProducts);
+      }
+    });
+    
+    return productsByCategory;
+  }, [products, selectedCategory]);
 
   // Auto-rotate banners
   useEffect(() => {
@@ -94,10 +130,38 @@ const HomePage: React.FC = () => {
   }, []);
 
   const keyword = searchParams.get('keyword') || '';
+  
+  // Use intersection observer for lazy loading
+  const { ref, inView } = useInView({
+    threshold: 0.1,
+    triggerOnce: false
+  });
 
+  // Load top products on initial render
   useEffect(() => {
     dispatch(getTopProducts());
   }, [dispatch]);
+  
+  // Load products when category changes or on initial load
+  useEffect(() => {
+    dispatch(getProducts({ pageNumber: 1, keyword, category: selectedCategory }));
+    setCurrentPage(1);
+  }, [dispatch, selectedCategory, keyword]);
+  
+  // Load more products when user scrolls to the bottom and there are more pages
+  useEffect(() => {
+    if (inView && currentPage < pages) {
+      dispatch(getProducts({ pageNumber: currentPage + 1, keyword, category: selectedCategory }));
+      setCurrentPage(prev => prev + 1);
+    }
+    
+    // Update hasMore state based on pagination info
+    if (currentPage >= pages) {
+      setHasMore(false);
+    } else {
+      setHasMore(true);
+    }
+  }, [inView, dispatch, currentPage, pages, keyword, selectedCategory]);
 
   useEffect(() => {
     dispatch(getProducts({
@@ -107,6 +171,7 @@ const HomePage: React.FC = () => {
     }));
   }, [dispatch, currentPage, keyword, selectedCategory]);
 
+  // Update URL params when page or category changes
   useEffect(() => {
     const params = new URLSearchParams();
     if (keyword) params.set('keyword', keyword);
@@ -418,62 +483,55 @@ const HomePage: React.FC = () => {
               ) : products.length > 0 ? (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-                    {products.map((product) => (
-                      <ProductCard key={product._id} product={product} />
-                    ))}
-                  </div>
-
-                  {/* Pagination */}
-                  {pages > 1 && (
-                    <div className="flex items-center justify-center space-x-2">
-                      <button
-                        onClick={() => handlePageChange(page - 1)}
-                        disabled={page === 1}
-                        className="p-2 rounded-md bg-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                      >
-                        <ChevronLeft className="h-5 w-5" />
-                      </button>
-
-                      {[...Array(pages)].map((_, index) => {
-                        const pageNumber = index + 1;
-                        if (
-                          pageNumber === 1 ||
-                          pageNumber === pages ||
-                          (pageNumber >= page - 2 && pageNumber <= page + 2)
-                        ) {
+                    {selectedCategory ? (
+                      // Regular product grid for selected category
+                      organizedProducts.map((product, index) => (
+                        <div key={product._id}>
+                          <ProductCard product={product} />
+                          {/* Add intersection observer reference to the last product */}
+                          {index === organizedProducts.length - 4 && <div ref={ref} />}
+                        </div>
+                      ))
+                    ) : (
+                      // Organized by category sections
+                      organizedProducts.map((item, index) => {
+                        if (item.isHeader) {
+                          // Category header
                           return (
-                            <button
-                              key={pageNumber}
-                              onClick={() => handlePageChange(pageNumber)}
-                              className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                                page === pageNumber
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
-                              }`}
-                            >
-                              {pageNumber}
-                            </button>
+                            <div key={`header-${item.category}`} className="col-span-full mt-8 mb-4">
+                              <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                                {item.displayName}
+                                <Link to={`/products?category=${item.category}`} className="ml-auto text-sm text-blue-500 hover:underline">
+                                  View All →
+                                </Link>
+                              </h3>
+                              <div className="h-1 w-20 bg-blue-500 mt-2"></div>
+                            </div>
                           );
-                        } else if (
-                          pageNumber === page - 3 ||
-                          pageNumber === page + 3
-                        ) {
+                        } else {
+                          // Product card
                           return (
-                            <span key={pageNumber} className="px-2 py-2 text-gray-500">
-                              ...
-                            </span>
+                            <div key={item._id}>
+                              <ProductCard product={item} />
+                              {index === organizedProducts.length - 4 && <div ref={ref} />}
+                            </div>
                           );
                         }
-                        return null;
-                      })}
+                      })
+                    )}
+                  </div>
 
-                      <button
-                        onClick={() => handlePageChange(page + 1)}
-                        disabled={page === pages}
-                        className="p-2 rounded-md bg-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                      >
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
+                  {/* Loading indicator for infinite scroll */}
+                  {isLoading && products.length > 0 && (
+                    <div className="flex justify-center mt-8">
+                      <Loader size="lg" />
+                    </div>
+                  )}
+                  
+                  {/* Show message when all products are loaded */}
+                  {!isLoading && currentPage >= pages && products.length > 0 && (
+                    <div className="text-center mt-8 text-gray-600">
+                      No more products to load
                     </div>
                   )}
                 </>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Search, ShoppingCart, User, Menu, X, LogOut, Package, Heart } from 'lucide-react';
+import DarkModeToggle from './DarkModeToggle';
 import { RootState, AppDispatch } from '../store/store';
 import { logout } from '../store/slices/authSlice';
 import { loadUserCart, clearUserCart } from '../store/slices/cartSlice';
@@ -71,13 +72,13 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
+    <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <Package className="h-8 w-8 text-blue-600" />
-            <span className="text-xl font-bold text-gray-800">ShopEase</span>
+            <span className="text-xl font-bold text-gray-800 dark:text-white">ShopEase</span>
           </Link>
 
           {/* Search Bar - Desktop */}
@@ -87,6 +88,7 @@ const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
+            <DarkModeToggle />
             <Link
               to="/products"
               className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
@@ -225,24 +227,29 @@ const Header: React.FC = () => {
 
         {/* Mobile menu */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              <form onSubmit={handleSearch} className="relative mb-4">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
+          <div className="md:hidden fixed inset-0 z-50 bg-black bg-opacity-50">
+            <div className="bg-white dark:bg-gray-800 h-full w-64 p-4 shadow-lg">
+              <div className="flex justify-between items-center mb-6">
+                <Link to="/" className="flex items-center space-x-2" onClick={() => setIsMenuOpen(false)}>
+                  <Package className="h-8 w-8 text-blue-600" />
+                  <span className="text-xl font-bold text-gray-800 dark:text-white">ShopEase</span>
+                </Link>
+                <button onClick={() => setIsMenuOpen(false)}>
+                  <X className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+                </button>
+              </div>
+              <div className="mb-4">
+                <DarkModeToggle />
+              </div>
+              <div className="space-y-4">
+                {/* Search Bar - Mobile */}
+                <div className="mb-4">
+                  <SearchBar onSearch={handleSearch} />
                 </div>
-                <input
-                  type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </form>
 
               <Link
                 to="/cart"
-                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 py-2"
+                className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 py-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <ShoppingCart className="h-5 w-5" />
@@ -253,22 +260,22 @@ const Header: React.FC = () => {
                 <>
                   <Link
                     to="/profile"
-                    className="block text-gray-600 hover:text-blue-600 py-2"
-                    onClick={() => setIsMenuOpen(false)}
+                    className="block text-gray-600 dark:text-gray-300 hover:text-blue-600 py-2"
+                  onClick={() => setIsMenuOpen(false)}
                   >
                     Profile
                   </Link>
                   <Link
                     to="/orders"
-                    className="block text-gray-600 hover:text-blue-600 py-2"
-                    onClick={() => setIsMenuOpen(false)}
+                    className="block text-gray-600 dark:text-gray-300 hover:text-blue-600 py-2"
+                  onClick={() => setIsMenuOpen(false)}
                   >
                     Order History
                   </Link>
                   {user.role === 'admin' && (
                     <Link
                       to="/admin/dashboard"
-                      className="block text-gray-600 hover:text-blue-600 py-2"
+                      className="block text-gray-600 dark:text-gray-300 hover:text-blue-600 py-2"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Admin Dashboard
@@ -276,7 +283,7 @@ const Header: React.FC = () => {
                   )}
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left text-gray-600 hover:text-blue-600 py-2"
+                    className="block w-full text-left text-gray-600 dark:text-gray-300 hover:text-blue-600 py-2"
                   >
                     Logout
                   </button>
@@ -285,7 +292,7 @@ const Header: React.FC = () => {
                 <>
                   <Link
                     to="/login"
-                    className="block text-gray-600 hover:text-blue-600 py-2"
+                    className="block text-gray-600 dark:text-gray-300 hover:text-blue-600 py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Login
@@ -299,6 +306,7 @@ const Header: React.FC = () => {
                   </Link>
                 </>
               )}
+              </div>
             </div>
           </div>
         )}

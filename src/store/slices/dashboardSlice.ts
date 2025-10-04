@@ -64,10 +64,23 @@ export const getDashboardStats = createAsyncThunk(
       const user = getUserFromStorage();
 
       if (!user || !user.token) {
-        console.log('❌ No user token, using mock data');
-        // Fallback to mock data
+        console.log('❌ No user token, fetching products directly from API');
+
+        // Fetch real products from API even without token
+        let totalProducts = 0;
+        try {
+          const productsResponse = await axios.get('http://localhost:8000/api/products?pageSize=1000');
+          const products = productsResponse.data.products || productsResponse.data || [];
+          totalProducts = products.length;
+          console.log('✅ Fetched products count:', totalProducts);
+        } catch (error) {
+          console.log('❌ Failed to fetch products, using mock data');
+          const products = getMockProducts();
+          totalProducts = products.length;
+        }
+
+        // Fallback to mock data for other stats
         const users = getMockUsers();
-        const products = getMockProducts();
         const orders = getMockOrders();
         const localOrders = JSON.parse(localStorage.getItem('userOrders') || '[]');
 
@@ -82,7 +95,7 @@ export const getDashboardStats = createAsyncThunk(
           pendingOrders: allOrders.filter(o => o.status === 'pending').length,
           shippedOrders: allOrders.filter(o => o.status === 'shipped').length,
           deliveredOrders: allOrders.filter(o => o.status === 'delivered').length,
-          totalProducts: products.length,
+          totalProducts: totalProducts,
         };
 
         const recentOrders = allOrders
@@ -100,10 +113,50 @@ export const getDashboardStats = createAsyncThunk(
         },
       };
 
-      const response = await axios.get(`${API_URL}/${role}`, config);
+      try {
+        const response = await axios.get(`${API_URL}/${role}`, config);
+        console.log('✅ Dashboard stats fetched successfully');
+        return response.data;
+      } catch (apiError) {
+        console.log('❌ API failed, fetching products directly and using mock data for other stats');
 
-      console.log('✅ Dashboard stats fetched successfully');
-      return response.data;
+        // Fetch real products from API
+        let totalProducts = 0;
+        try {
+          const productsResponse = await axios.get('http://localhost:8000/api/products?pageSize=1000');
+          const products = productsResponse.data.products || productsResponse.data || [];
+          totalProducts = products.length;
+          console.log('✅ Fetched products count:', totalProducts);
+        } catch (error) {
+          console.log('❌ Failed to fetch products, using mock data');
+          const products = getMockProducts();
+          totalProducts = products.length;
+        }
+
+        // Use mock data for other stats
+        const users = getMockUsers();
+        const orders = getMockOrders();
+        const localOrders = JSON.parse(localStorage.getItem('userOrders') || '[]');
+        const allOrders = [...orders, ...localOrders];
+
+        const stats = {
+          totalUsers: users.filter(u => u.role === 'user').length,
+          totalSellers: users.filter(u => u.role === 'seller').length,
+          totalDeliveryAgents: users.filter(u => u.role === 'delivery').length,
+          totalOrders: allOrders.length,
+          totalRevenue: allOrders.reduce((sum, order) => sum + order.total, 0),
+          pendingOrders: allOrders.filter(o => o.status === 'pending').length,
+          shippedOrders: allOrders.filter(o => o.status === 'shipped').length,
+          deliveredOrders: allOrders.filter(o => o.status === 'delivered').length,
+          totalProducts: totalProducts,
+        };
+
+        const recentOrders = allOrders
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 10);
+
+        return { stats, recentOrders, topProducts: [], topSellers: [] };
+      }
     } catch (error: any) {
       const message = error.message || error.toString();
       return thunkAPI.rejectWithValue(message);

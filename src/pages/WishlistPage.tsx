@@ -5,7 +5,11 @@ import { Heart, ShoppingCart, Trash2, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { RootState, AppDispatch } from '../store/store';
 import { addToCart } from '../store/slices/cartSlice';
-import { getWishlistFromStorage, removeFromWishlist, saveWishlistToStorage } from '../utils/localStorage';
+import {
+  getSimpleWishlist,
+  removeFromSimpleWishlist,
+  addToSimpleCart
+} from '../utils/simpleCart';
 
 interface WishlistItem {
   _id: string;
@@ -28,18 +32,13 @@ const WishlistPage: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    
-    // Load wishlist from localStorage
-    const wishlist = getWishlistFromStorage();
+    // Load wishlist from localStorage (no login required)
+    const wishlist = getSimpleWishlist();
     setWishlistItems(wishlist);
-  }, [user, navigate]);
+  }, []);
 
   const handleRemoveFromWishlist = (productId: string) => {
-    const success = removeFromWishlist(productId);
+    const success = removeFromSimpleWishlist(productId);
     if (success) {
       setWishlistItems(prev => prev.filter(item => item._id !== productId));
       toast.success('Removed from wishlist');
@@ -47,28 +46,31 @@ const WishlistPage: React.FC = () => {
   };
 
   const handleAddToCart = async (product: WishlistItem) => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
     if (product.stock > 0) {
       try {
-        await dispatch(addToCart({
-          productId: product._id,
-          quantity: 1,
-          product: {
-            _id: product._id,
-            name: product.name,
-            price: product.price,
-            images: product.images,
-            stock: product.stock,
-            brand: product.brand
-          }
-        })).unwrap();
+        if (user) {
+          // Use Redux cart for logged-in users
+          await dispatch(addToCart({
+            productId: product._id,
+            quantity: 1,
+            product: {
+              _id: product._id,
+              name: product.name,
+              price: product.price,
+              images: product.images,
+              stock: product.stock,
+              brand: product.brand
+            }
+          })).unwrap();
+        } else {
+          // Use simple cart for guest users
+          addToSimpleCart(product);
+        }
         toast.success('Added to cart!');
       } catch (error) {
-        toast.error('Failed to add to cart');
+        // Fallback to simple cart if Redux fails
+        addToSimpleCart(product);
+        toast.success('Added to cart!');
       }
     } else {
       toast.error('Product is out of stock');
@@ -80,9 +82,7 @@ const WishlistPage: React.FC = () => {
     handleRemoveFromWishlist(product._id);
   };
 
-  if (!user) {
-    return null;
-  }
+  // Remove login requirement - wishlist should work for guests too
 
   return (
     <div className="min-h-screen bg-gray-50">

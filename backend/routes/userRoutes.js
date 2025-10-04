@@ -11,6 +11,7 @@ import {
   removeFromWishlist,
   getUsers,
   deleteUser,
+  updateUserRole,
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -28,5 +29,6 @@ router.route('/wishlist')
   .post(protect, addToWishlist);
 router.route('/wishlist/:productId').delete(protect, removeFromWishlist);
 router.route('/:id').delete(protect, admin, deleteUser);
+router.route('/:id/role').put(protect, admin, updateUserRole);
 
 export default router;

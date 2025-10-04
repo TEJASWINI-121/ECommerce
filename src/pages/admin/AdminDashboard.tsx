@@ -13,36 +13,76 @@ import {
   Truck,
   Store,
   BarChart3,
-  Settings
+  Settings,
+  CheckCircle,
+  RefreshCw
 } from 'lucide-react';
 import { RootState, AppDispatch } from '../../store/store';
 import { logout } from '../../store/slices/authSlice';
 import { getDashboardStats, updateOrderStatus } from '../../store/slices/dashboardSlice';
+import { updateSimpleOrderStatus } from '../../utils/simpleOrders';
 
 const AdminDashboard: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { stats, recentOrders, topProducts, topSellers, isLoading } = useSelector((state: RootState) => state.dashboard);
   const [activeTab, setActiveTab] = useState('overview');
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(getDashboardStats());
+    
+    // Refresh dashboard data every 30 seconds to show new orders
+    const intervalId = setInterval(() => {
+      dispatch(getDashboardStats());
+    }, 30000);
+    
+    return () => clearInterval(intervalId);
   }, [dispatch]);
 
   const handleLogout = () => {
     dispatch(logout());
   };
 
+  const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
+    try {
+      setUpdatingOrderId(orderId);
+      
+      // Update in Redux store
+      await dispatch(updateOrderStatus({ orderId, status: newStatus }));
+      
+      // Also update in local storage for offline mode
+      updateSimpleOrderStatus(orderId, newStatus);
+      
+      // Show success notification
+      const notification = document.getElementById('notification');
+      if (notification) {
+        notification.classList.remove('hidden');
+        setTimeout(() => {
+          notification.classList.add('hidden');
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'delivered':
-        return 'text-green-600 bg-green-100';
-      case 'shipped':
-        return 'text-blue-600 bg-blue-100';
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
       case 'processing':
-        return 'text-yellow-600 bg-yellow-100';
+        return 'bg-purple-100 text-purple-800';
+      case 'shipped':
+        return 'bg-blue-100 text-blue-800';
+      case 'delivered':
+        return 'bg-green-100 text-green-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
       default:
-        return 'text-gray-600 bg-gray-100';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -55,7 +95,12 @@ const AdminDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Success Notification */}
+      <div id="notification" className="hidden fixed top-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 shadow-md rounded z-50 flex items-center">
+        <CheckCircle className="h-5 w-5 mr-2" />
+        <span>Order status updated successfully!</span>
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -277,8 +322,27 @@ const AdminDashboard: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <p className="font-medium text-gray-900">${order.total?.toFixed(2) || '0.00'}</p>
-                        <div className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
-                          {order.status}
+                        <div className="flex items-center space-x-2">
+                          <div className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
+                            {order.status}
+                          </div>
+                          <div className="relative inline-block">
+                            <select 
+                              value={order.status}
+                              disabled={updatingOrderId === order._id}
+                              onChange={(e) => handleOrderStatusChange(order._id, e.target.value)}
+                              className="text-xs border border-gray-300 rounded px-2 py-1 pr-8 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none bg-white"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="processing">Processing</option>
+                              <option value="shipped">Shipped</option>
+                              <option value="delivered">Delivered</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                            {updatingOrderId === order._id && (
+                              <RefreshCw className="h-3 w-3 text-blue-500 animate-spin absolute right-2 top-1/2 transform -translate-y-1/2" />
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

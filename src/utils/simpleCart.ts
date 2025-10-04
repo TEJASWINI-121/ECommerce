@@ -56,16 +56,16 @@ export const saveSimpleCart = (items: SimpleCartItem[]): void => {
 };
 
 // Add item to cart
-export const addToSimpleCart = (product: any): boolean => {
+export const addToSimpleCart = (product: any, quantity: number = 1): boolean => {
   try {
-    console.log('🛒 Adding to cart:', product.name);
-    
+    console.log('🛒 Adding to cart:', product.name, 'Quantity:', quantity);
+
     const currentCart = getSimpleCart();
     const existingItemIndex = currentCart.findIndex(item => item._id === product._id);
 
     if (existingItemIndex >= 0) {
       // Update quantity if item exists
-      currentCart[existingItemIndex].quantity += 1;
+      currentCart[existingItemIndex].quantity += quantity;
       console.log('📦 Updated quantity for:', product.name);
     } else {
       // Add new item
@@ -74,7 +74,7 @@ export const addToSimpleCart = (product: any): boolean => {
         name: product.name,
         price: product.price,
         images: product.images || [],
-        quantity: 1,
+        quantity: quantity,
         stock: product.stock || 0,
         brand: product.brand,
         category: product.category

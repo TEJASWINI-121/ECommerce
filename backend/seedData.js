@@ -251,12 +251,97 @@ const generateProducts = () => {
           }
         }
 
-        // Create three variations of the same product image
-        return [
-          `https://via.placeholder.com/600x600/${bgColor}/${textColor}?text=${encodeURIComponent(imageText)}`,
-          `https://via.placeholder.com/600x600/${bgColor}/${textColor}?text=${encodeURIComponent(imageText + ' - View 2')}`,
-          `https://via.placeholder.com/600x600/${bgColor}/${textColor}?text=${encodeURIComponent(imageText + ' - View 3')}`
+        // Create three variations using Unsplash images
+        const imageMap = {
+          'iPhone': [
+            'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1605236453806-6ff36851218e?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'MacBook': [
+            'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'Galaxy': [
+            'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1512499617640-c74ae3a79d37?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1574944985070-8f3ebc6b79d2?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'iPad': [
+            'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1585790050230-5dd28404ccb9?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'Headphones': [
+            'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'AirPods': [
+            'https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'Laptop': [
+            'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'T-Shirt': [
+            'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'Jeans': [
+            'https://images.unsplash.com/photo-1542272604-787c3835535d?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1475178626620-a4d074967452?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'Dress': [
+            'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1566479179817-c0b5b4b4b1e5?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'Sneakers': [
+            'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1551107696-a4b0c5a0d9a2?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'Boots': [
+            'https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1520639888713-7851133b1ed0?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'Sunglasses': [
+            'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'Watch': [
+            'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1434056886845-dac89ffe9b56?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'Beauty': [
+            'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&h=600&fit=crop&auto=format&q=80'
+          ],
+          'Sports': [
+            'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&h=600&fit=crop&auto=format&q=80',
+            'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=600&h=600&fit=crop&auto=format&q=80'
+          ]
+        };
+
+        const productImages = imageMap[imageText] || [
+          'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=600&fit=crop&auto=format&q=80',
+          'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=600&fit=crop&auto=format&q=80',
+          'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=600&h=600&fit=crop&auto=format&q=80'
         ];
+
+        return productImages;
       };
 
       const product = {

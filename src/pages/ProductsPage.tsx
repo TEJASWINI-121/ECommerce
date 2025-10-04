@@ -29,7 +29,7 @@ const ProductsPage: React.FC = () => {
   const categoryFromUrl = searchParams.get('category') || '';
 
   useEffect(() => {
-    dispatch(getProducts());
+    dispatch(getProducts({ pageSize: 1000 })); // Fetch all products
   }, [dispatch]);
 
   // Set category from URL
