@@ -1,27 +1,50 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { RootState, AppDispatch } from '../store/store';
 import { getCart, addToCart, removeFromCart } from '../store/slices/cartSlice';
+import { getSimpleCart, updateSimpleCartQuantity, removeFromSimpleCart, SimpleCartItem } from '../utils/simpleCart';
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  
-  const { items, isLoading } = useSelector((state: RootState) => state.cart);
+
+  const { items: reduxItems, isLoading } = useSelector((state: RootState) => state.cart);
   const { user } = useSelector((state: RootState) => state.auth);
+  const [guestCartItems, setGuestCartItems] = useState<SimpleCartItem[]>([]);
 
   useEffect(() => {
     if (user) {
       dispatch(getCart());
+    } else {
+      // Load guest cart from localStorage
+      setGuestCartItems(getSimpleCart());
     }
   }, [dispatch, user]);
 
+  // Use Redux cart for logged-in users, simple cart for guests
+  const items = user ? reduxItems : guestCartItems.map(item => ({
+    product: {
+      _id: item._id,
+      name: item.name,
+      price: item.price,
+      images: item.images,
+      stock: item.stock
+    },
+    quantity: item.quantity
+  }));
+
   const updateQuantity = async (productId: string, quantity: number) => {
     try {
-      await dispatch(addToCart({ productId, quantity })).unwrap();
+      if (user) {
+        await dispatch(addToCart({ productId, quantity })).unwrap();
+      } else {
+        // Update guest cart
+        updateSimpleCartQuantity(productId, quantity);
+        setGuestCartItems(getSimpleCart());
+      }
     } catch (error) {
       toast.error('Failed to update cart');
     }
@@ -29,7 +52,13 @@ const CartPage: React.FC = () => {
 
   const removeItem = async (productId: string) => {
     try {
-      await dispatch(removeFromCart(productId)).unwrap();
+      if (user) {
+        await dispatch(removeFromCart(productId)).unwrap();
+      } else {
+        // Remove from guest cart
+        removeFromSimpleCart(productId);
+        setGuestCartItems(getSimpleCart());
+      }
       toast.success('Item removed from cart');
     } catch (error) {
       toast.error('Failed to remove item');
@@ -41,23 +70,7 @@ const CartPage: React.FC = () => {
   const shipping = subtotal > 50 ? 0 : 10; // Free shipping over $50
   const total = subtotal + tax + shipping;
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <ShoppingBag className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Please Login</h2>
-          <p className="text-gray-600 mb-6">You need to be logged in to view your cart.</p>
-          <Link
-            to="/login"
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // Remove login requirement - cart should work for guests too
 
   if (items.length === 0 && !isLoading) {
     return (

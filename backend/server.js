@@ -12,6 +12,8 @@ import orderRoutes from './routes/orderRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
+import sellerRoutes from './routes/sellerRoutes.js';
+import deliveryRoutes from './routes/deliveryRoutes.js';
 
 // Import error middleware
 import { errorHandler } from './middleware/errorMiddleware.js';
@@ -52,6 +54,8 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/seller', sellerRoutes);
+app.use('/api/delivery', deliveryRoutes);
 
 // Basic route
 app.get('/', (req, res) => {

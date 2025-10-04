@@ -12,11 +12,12 @@ const RegisterPage: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    role: 'user',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const { name, email, password, confirmPassword } = formData;
+  const { name, email, password, confirmPassword, role } = formData;
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
@@ -37,7 +38,7 @@ const RegisterPage: React.FC = () => {
     dispatch(reset());
   }, [user, isError, isSuccess, message, navigate, dispatch]);
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData((prevState) => ({
       ...prevState,
       [e.target.name]: e.target.value,
@@ -61,7 +62,7 @@ const RegisterPage: React.FC = () => {
       name,
       email,
       password,
-      role: 'user', // Default role for new registrations
+      role, // Use selected role
     };
 
     dispatch(register(userData));
@@ -194,6 +195,25 @@ const RegisterPage: React.FC = () => {
                     <Eye className="h-5 w-5 text-gray-400" />
                   )}
                 </button>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                Account Type
+              </label>
+              <div className="mt-1">
+                <select
+                  id="role"
+                  name="role"
+                  value={role}
+                  onChange={onChange}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="user">Customer</option>
+                  <option value="seller">Seller</option>
+                  <option value="delivery">Delivery Personnel</option>
+                </select>
               </div>
             </div>
 

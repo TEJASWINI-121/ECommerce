@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { API_BASE_URL } from '../../utils/simpleMockData';
 
-const API_URL = 'http://localhost:8000/api/users';
+const API_URL = `${API_BASE_URL}/users`;
 
 // Get user from localStorage
 const getUserFromStorage = () => {
@@ -14,103 +15,81 @@ const getUserFromStorage = () => {
   }
 };
 
-// Add to wishlist
+// Add to wishlist (localStorage implementation)
 export const addToWishlist = createAsyncThunk(
   'wishlist/addToWishlist',
-  async (productId: string, thunkAPI) => {
+  async (product: any, thunkAPI) => {
     try {
-      const user = getUserFromStorage();
-      if (!user || !user.token) {
-        return thunkAPI.rejectWithValue('No authentication token');
+      console.log('🔄 Adding to wishlist:', product.name);
+
+      // Get current wishlist from localStorage
+      const existingWishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+
+      // Check if product already exists
+      const existingIndex = existingWishlist.findIndex((item: any) => item._id === product._id);
+
+      if (existingIndex !== -1) {
+        toast.info('Product already in wishlist!');
+        return thunkAPI.rejectWithValue('Product already in wishlist');
       }
 
-      console.log('🔄 Adding to wishlist via API:', productId);
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-          'Content-Type': 'application/json',
-        },
-      };
-
-      const response = await axios.post(
-        `${API_URL}/wishlist`,
-        { productId },
-        config
-      );
+      // Add product to wishlist
+      const updatedWishlist = [...existingWishlist, product];
+      localStorage.setItem('wishlist', JSON.stringify(updatedWishlist));
 
       console.log('✅ Added to wishlist successfully');
       toast.success('Added to wishlist!');
-      return response.data;
+      return product;
     } catch (error: any) {
-      console.error('❌ Failed to add to wishlist:', error.response?.data || error.message);
-      const message = error.response?.data?.message || 'Failed to add to wishlist';
+      console.error('❌ Failed to add to wishlist:', error.message);
+      const message = 'Failed to add to wishlist';
       toast.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-// Remove from wishlist
+// Remove from wishlist (localStorage implementation)
 export const removeFromWishlist = createAsyncThunk(
   'wishlist/removeFromWishlist',
   async (productId: string, thunkAPI) => {
     try {
-      const user = getUserFromStorage();
-      if (!user || !user.token) {
-        return thunkAPI.rejectWithValue('No authentication token');
-      }
+      console.log('🔄 Removing from wishlist:', productId);
 
-      console.log('🔄 Removing from wishlist via API:', productId);
+      // Get current wishlist from localStorage
+      const existingWishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      };
-
-      const response = await axios.delete(
-        `${API_URL}/wishlist/${productId}`,
-        config
-      );
+      // Remove product from wishlist
+      const updatedWishlist = existingWishlist.filter((item: any) => item._id !== productId);
+      localStorage.setItem('wishlist', JSON.stringify(updatedWishlist));
 
       console.log('✅ Removed from wishlist successfully');
       toast.success('Removed from wishlist!');
       return response.data;
     } catch (error: any) {
-      console.error('❌ Failed to remove from wishlist:', error.response?.data || error.message);
-      const message = error.response?.data?.message || 'Failed to remove from wishlist';
+      console.error('❌ Failed to remove from wishlist:', error.message);
+      const message = 'Failed to remove from wishlist';
       toast.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-// Get wishlist
+// Get wishlist (localStorage implementation)
 export const getWishlist = createAsyncThunk(
   'wishlist/getWishlist',
   async (_, thunkAPI) => {
     try {
-      const user = getUserFromStorage();
-      if (!user || !user.token) {
-        return thunkAPI.rejectWithValue('No authentication token');
-      }
+      console.log('🔄 Fetching wishlist from localStorage');
 
-      console.log('🔄 Fetching wishlist from API');
+      // Get wishlist from localStorage
+      const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      };
-
-      const response = await axios.get(`${API_URL}/wishlist`, config);
-
-      console.log('✅ Wishlist fetched successfully:', response.data.length, 'items');
-      return response.data;
+      console.log('✅ Fetched wishlist successfully:', wishlist.length, 'items');
+      return wishlist;
     } catch (error: any) {
-      console.error('❌ Failed to fetch wishlist:', error.response?.data || error.message);
-      const message = error.response?.data?.message || 'Failed to fetch wishlist';
+      console.error('❌ Failed to fetch wishlist:', error.message);
+      const message = 'Failed to fetch wishlist';
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -150,7 +129,7 @@ const wishlistSlice = createSlice({
       })
       .addCase(addToWishlist.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.items = action.payload;
+        state.items.push(action.payload);
       })
       .addCase(addToWishlist.rejected, (state, action) => {
         state.isLoading = false;
@@ -163,7 +142,7 @@ const wishlistSlice = createSlice({
       })
       .addCase(removeFromWishlist.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.items = action.payload;
+        state.items = state.items.filter(item => item._id !== action.payload);
       })
       .addCase(removeFromWishlist.rejected, (state, action) => {
         state.isLoading = false;

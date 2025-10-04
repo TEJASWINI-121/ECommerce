@@ -20,7 +20,7 @@ const RoleBasedRedirect: React.FC = () => {
       return <Navigate to="/delivery/dashboard" replace />;
     case 'user':
     default:
-      return <Navigate to="/" replace />; // Regular users go to homepage
+      return <Navigate to="/user-dashboard" replace />; // Regular users go to user dashboard
   }
 };
 

@@ -6,7 +6,9 @@ import { toast } from 'react-toastify';
 import { RootState, AppDispatch } from '../store/store';
 import { getProduct } from '../store/slices/productSlice';
 import { addToCart } from '../store/slices/cartSlice';
+import { addToSimpleCart } from '../utils/simpleCart';
 import Loader from '../components/Loader';
+import ProductRecommendations from '../components/ProductRecommendations';
 
 const ProductPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,17 +34,25 @@ const ProductPage: React.FC = () => {
   }, [isError, message]);
 
   const handleAddToCart = async () => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
     if (product && quantity > 0) {
       try {
-        await dispatch(addToCart({ productId: product._id, quantity })).unwrap();
+        if (user) {
+          // Use Redux cart for logged-in users
+          await dispatch(addToCart({
+            productId: product._id,
+            quantity,
+            product: product
+          })).unwrap();
+        } else {
+          // Use simple cart for guest users
+          addToSimpleCart(product, quantity);
+        }
         toast.success('Product added to cart!');
       } catch (error) {
-        toast.error('Failed to add product to cart');
+        console.error('Cart error:', error);
+        // Fallback to simple cart if Redux fails
+        addToSimpleCart(product, quantity);
+        toast.success('Product added to cart!');
       }
     }
   };
@@ -265,6 +275,9 @@ const ProductPage: React.FC = () => {
             </div>
           </div>
         )}
+        
+        {/* Product Recommendations */}
+        <ProductRecommendations productId={product._id} category={product.category} />
       </div>
     </div>
   );

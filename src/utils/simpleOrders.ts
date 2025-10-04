@@ -270,3 +270,5 @@ export const getSimpleOrderStats = () => {
     };
   }
 };
+
+// This duplicate function has been completely removed

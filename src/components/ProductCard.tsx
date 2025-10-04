@@ -1,8 +1,9 @@
-import React, { memo, useCallback, useState, useEffect } from 'react';
+import React, { memo, useCallback, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Star, Heart, ShoppingCart } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useInView } from 'react-intersection-observer';
 import { RootState, AppDispatch } from '../store/store';
 import { addToCart } from '../store/slices/cartSlice';
 import { addToWishlist, removeFromWishlist, getWishlist } from '../store/slices/wishlistSlice';
@@ -37,6 +38,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const [isInWishlist, setIsInWishlist] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const { ref, inView } = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
 
   const discountPercentage = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -51,24 +57,26 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
     e.preventDefault();
     e.stopPropagation();
 
-    // Always use localStorage for immediate functionality
+    // Use both localStorage and Redux for consistency
     try {
       if (isInWishlist) {
         const success = removeFromSimpleWishlist(product._id);
         if (success) {
           setIsInWishlist(false);
+          dispatch(removeFromWishlist(product._id));
         }
       } else {
         const success = addToSimpleWishlist(product);
         if (success) {
           setIsInWishlist(true);
+          dispatch(addToWishlist(product));
         }
       }
     } catch (error) {
       console.error('Wishlist error:', error);
       toast.error('Failed to update wishlist');
     }
-  }, [isInWishlist, product]);
+  }, [isInWishlist, product, dispatch]);
 
   const handleProductClick = useCallback(() => {
     addToRecentlyViewed(product);
@@ -79,33 +87,60 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
     e.stopPropagation();
 
     if (product.stock > 0) {
-      // Always use localStorage for immediate functionality
-      const success = addToSimpleCart(product);
-      if (success) {
+      try {
+        // Use Redux cart system for consistency
+        await dispatch(addToCart({
+          productId: product._id,
+          quantity: 1,
+          product: product
+        })).unwrap();
         toast.success('Added to cart!');
-      } else {
-        toast.error('Failed to add to cart');
+      } catch (error: any) {
+        console.error('Cart error:', error);
+        // Fallback to simple cart if Redux fails
+        const success = addToSimpleCart(product);
+        if (success) {
+          toast.success('Added to cart!');
+        } else {
+          toast.error('Failed to add to cart');
+        }
       }
     } else {
       toast.error('Product is out of stock');
     }
-  }, [product]);
+  }, [product, dispatch]);
 
   return (
     <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 group overflow-hidden transform hover:-translate-y-1 border border-gray-100">
       <div className="relative overflow-hidden">
         <Link to={`/product/${product._id}`} onClick={handleProductClick}>
-          <img
-            src={product.images[0]}
-            alt={product.name}
-            className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
-            loading="lazy"
-            onError={(e) => {
-              // Fallback to a placeholder image if the original fails to load
-              const target = e.target as HTMLImageElement;
-              target.src = `https://via.placeholder.com/600x600/f3f4f6/9ca3af?text=${encodeURIComponent(product.name.split(' ')[0])}`;
-            }}
-          />
+          <div ref={ref} className="relative w-full h-64">
+            {inView ? (
+              <>
+                {!imageLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                    <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+                <img
+                  src={product.images[0]}
+                  alt={product.name}
+                  className={`w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  loading="lazy"
+                  onLoad={() => setImageLoaded(true)}
+                  onError={(e) => {
+                    // Fallback to a placeholder image if the original fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.src = `https://via.placeholder.com/600x600/f3f4f6/9ca3af?text=${encodeURIComponent(product.name.split(' ')[0])}`;
+                  }}
+                />
+              </>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                <div className="w-32 h-32 bg-gray-200 animate-pulse rounded"></div>
+              </div>
+            )}
+          </div>
         </Link>
 
         {discountPercentage > 0 && (

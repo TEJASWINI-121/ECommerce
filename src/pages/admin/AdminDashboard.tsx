@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   Package,
   Users,
@@ -13,36 +13,93 @@ import {
   Truck,
   Store,
   BarChart3,
-  Settings
+  Settings,
+  CheckCircle,
+  RefreshCw,
+  ShoppingBag,
+  BarChart2,
+  Calendar,
+  Clock
 } from 'lucide-react';
-import { RootState, AppDispatch } from '../../store/store';
+import { RootState } from '../../store/store';
 import { logout } from '../../store/slices/authSlice';
-import { getDashboardStats, updateOrderStatus } from '../../store/slices/dashboardSlice';
+import { updateSimpleOrderStatus } from '../../utils/simpleOrders';
+import { addRegisteredUser } from '../../utils/userStorage';
+import { useAdminDashboard } from '../../hooks/useDashboardData';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { stats, recentOrders, topProducts, topSellers, isLoading } = useSelector((state: RootState) => state.dashboard);
   const [activeTab, setActiveTab] = useState('overview');
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+
+  // Use the custom hook for admin dashboard data
+  const { 
+    stats, 
+    recentOrders, 
+    topProducts, 
+    topSellers, 
+    loading, 
+    error, 
+    refreshData 
+  } = useAdminDashboard();
 
   useEffect(() => {
-    dispatch(getDashboardStats());
-  }, [dispatch]);
+    // Redirect if not logged in or not an admin
+    if (!user || user.role !== 'admin') {
+      navigate('/');
+    }
+    
+    // Store user in localStorage for accurate counts
+    if (user) {
+      addRegisteredUser(user);
+    }
+  }, [user, navigate]);
 
   const handleLogout = () => {
     dispatch(logout());
   };
 
+  const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
+    try {
+      setUpdatingOrderId(orderId);
+      
+      // Update in local storage for offline mode
+      await updateSimpleOrderStatus(orderId, newStatus);
+      
+      // Refresh dashboard data after update
+      refreshData();
+      
+      // Show success notification
+      const notification = document.getElementById('notification');
+      if (notification) {
+        notification.classList.remove('hidden');
+        setTimeout(() => {
+          notification.classList.add('hidden');
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'delivered':
-        return 'text-green-600 bg-green-100';
-      case 'shipped':
-        return 'text-blue-600 bg-blue-100';
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
       case 'processing':
-        return 'text-yellow-600 bg-yellow-100';
+        return 'bg-purple-100 text-purple-800';
+      case 'shipped':
+        return 'bg-blue-100 text-blue-800';
+      case 'delivered':
+        return 'bg-green-100 text-green-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
       default:
-        return 'text-gray-600 bg-gray-100';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -55,7 +112,12 @@ const AdminDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Success Notification */}
+      <div id="notification" className="hidden fixed top-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 shadow-md rounded z-50 flex items-center">
+        <CheckCircle className="h-5 w-5 mr-2" />
+        <span>Order status updated successfully!</span>
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -104,15 +166,24 @@ const AdminDashboard: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Users</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalUsers.toLocaleString()}</p>
+                <div className="mt-2 text-xs text-gray-500">
+                  <div className="flex justify-between">
+                    <span>Customers:</span>
+                    <span>{(stats.totalUsers - stats.totalSellers - stats.totalDeliveryAgents).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Sellers:</span>
+                    <span>{stats.totalSellers.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Delivery:</span>
+                    <span>{stats.totalDeliveryAgents.toLocaleString()}</span>
+                  </div>
+                </div>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
                 <Users className="h-6 w-6 text-blue-600" />
               </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+8%</span>
-              <span className="text-gray-500 ml-1">from last month</span>
             </div>
           </div>
 
@@ -127,9 +198,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+12%</span>
-              <span className="text-gray-500 ml-1">from last month</span>
+              <span className="text-gray-500">Active sellers</span>
             </div>
           </div>
 
@@ -144,9 +213,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+5%</span>
-              <span className="text-gray-500 ml-1">from last month</span>
+              <span className="text-gray-500">Active agents</span>
             </div>
           </div>
 
@@ -155,15 +222,24 @@ const AdminDashboard: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Orders</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
+                <div className="mt-2 text-xs text-gray-500">
+                  <div className="flex justify-between">
+                    <span>Pending:</span>
+                    <span>{stats.pendingOrders}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Shipped:</span>
+                    <span>{stats.shippedOrders}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Delivered:</span>
+                    <span>{stats.deliveredOrders}</span>
+                  </div>
+                </div>
               </div>
               <div className="p-3 bg-orange-100 rounded-full">
                 <ShoppingCart className="h-6 w-6 text-orange-600" />
               </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+15%</span>
-              <span className="text-gray-500 ml-1">from last month</span>
             </div>
           </div>
 
@@ -178,9 +254,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+23%</span>
-              <span className="text-gray-500 ml-1">from last month</span>
+              <span className="text-gray-500">All time revenue</span>
             </div>
           </div>
         </div>
@@ -277,8 +351,27 @@ const AdminDashboard: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <p className="font-medium text-gray-900">${order.total?.toFixed(2) || '0.00'}</p>
-                        <div className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
-                          {order.status}
+                        <div className="flex items-center space-x-2">
+                          <div className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
+                            {order.status}
+                          </div>
+                          <div className="relative inline-block">
+                            <select 
+                              value={order.status}
+                              disabled={updatingOrderId === order._id}
+                              onChange={(e) => handleOrderStatusChange(order._id, e.target.value)}
+                              className="text-xs border border-gray-300 rounded px-2 py-1 pr-8 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none bg-white"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="processing">Processing</option>
+                              <option value="shipped">Shipped</option>
+                              <option value="delivered">Delivered</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                            {updatingOrderId === order._id && (
+                              <RefreshCw className="h-3 w-3 text-blue-500 animate-spin absolute right-2 top-1/2 transform -translate-y-1/2" />
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

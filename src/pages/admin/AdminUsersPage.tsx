@@ -1,86 +1,268 @@
-import React from 'react';
-import { Users, Shield, User, Trash2, Edit } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Shield, User, Trash2, Edit, Search, Filter, RefreshCw, ArrowLeft, Phone, MapPin } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import axios from 'axios';
+import { API_BASE_URL } from '../../utils/simpleMockData';
+
+interface ApiUser {
+  _id: string;
+  name: string;
+  email: string;
+  role: 'user' | 'admin' | 'seller' | 'delivery';
+  createdAt: string;
+  phoneNumber?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    postalCode?: string;
+    country?: string;
+  };
+}
 
 const AdminUsersPage: React.FC = () => {
-  // Mock data - in a real app, this would come from your API
-  const users = [
-    {
-      _id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      role: 'user',
-      createdAt: '2024-01-10T08:00:00Z',
-      lastLogin: '2024-01-15T14:30:00Z'
-    },
-    {
-      _id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      role: 'user',
-      createdAt: '2024-01-08T10:20:00Z',
-      lastLogin: '2024-01-14T16:45:00Z'
-    },
-    {
-      _id: '3',
-      name: 'Admin User',
-      email: 'admin@example.com',
-      role: 'admin',
-      createdAt: '2023-12-01T12:00:00Z',
-      lastLogin: '2024-01-15T09:15:00Z'
-    },
-    {
-      _id: '4',
-      name: 'Bob Johnson',
-      email: 'bob@example.com',
-      role: 'user',
-      createdAt: '2024-01-05T15:30:00Z',
-      lastLogin: '2024-01-13T11:20:00Z'
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [users, setUsers] = useState<ApiUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+
+      // Try multiple token sources
+      let token = localStorage.getItem('token');
+      if (!token) {
+        const currentUser = localStorage.getItem('currentUser');
+        if (currentUser) {
+          try {
+            const userData = JSON.parse(currentUser);
+            token = userData.token || userData;
+          } catch (e) {
+            token = currentUser.replace(/"/g, ''); // Remove quotes if it's just a string
+          }
+        }
+      }
+
+      console.log('Using token for users API:', token ? 'Token found' : 'No token');
+
+      // Use API_BASE_URL from imports
+      const response = await axios.get(`${API_BASE_URL}/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 8000 // Increase timeout to prevent connection issues
+      });
+
+      console.log('Users API response:', response.data);
+      setUsers(response.data || []);
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+      console.error('Error details:', error.response?.data);
+
+      // Create some realistic mock users for demo
+      const mockUsers = [
+        {
+          _id: '1',
+          name: 'John Doe',
+          email: 'john@example.com',
+          role: 'user',
+          createdAt: '2024-01-10T08:00:00Z',
+          phoneNumber: '+1234567890',
+          address: { city: 'New York', country: 'USA' }
+        },
+        {
+          _id: '2',
+          name: 'Jane Smith',
+          email: 'jane@example.com',
+          role: 'admin',
+          createdAt: '2024-01-08T10:20:00Z',
+          phoneNumber: '+1234567891',
+          address: { city: 'Los Angeles', country: 'USA' }
+        },
+        {
+          _id: '3',
+          name: 'Mike Johnson',
+          email: 'mike@example.com',
+          role: 'user',
+          createdAt: '2024-01-05T10:20:00Z',
+          phoneNumber: '+1234567892',
+          address: { city: 'Chicago', country: 'USA' }
+        },
+        {
+          _id: '4',
+          name: 'Sarah Wilson',
+          email: 'sarah@example.com',
+          role: 'seller',
+          createdAt: '2024-01-03T10:20:00Z',
+          phoneNumber: '+1234567893',
+          address: { city: 'Miami', country: 'USA' }
+        },
+        {
+          _id: '5',
+          name: 'Admin User',
+          email: 'admin@example.com',
+          role: 'admin',
+          createdAt: '2023-12-01T10:20:00Z',
+          phoneNumber: '+1234567894',
+          address: { city: 'San Francisco', country: 'USA' }
+        }
+      ];
+
+      setUsers(mockUsers);
+      toast.info('Showing demo users (API connection failed)');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchUsers();
+    setRefreshing(false);
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const token = currentUser.token || localStorage.getItem('token');
+
+        await axios.delete(`${API_BASE_URL}/users/${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 8000
+        });
+
+        toast.success('User deleted successfully');
+        fetchUsers(); // Refresh the list
+      } catch (error: any) {
+        console.error('Error deleting user:', error);
+        toast.error('Failed to delete user');
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // Filter users based on search and role filter
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === '' || user.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
 
   const stats = {
-    totalUsers: users.length,
-    adminUsers: users.filter(user => user.role === 'admin').length,
-    regularUsers: users.filter(user => user.role === 'user').length,
-    newUsersThisWeek: 2
+    totalUsers: filteredUsers.length,
+    adminUsers: filteredUsers.filter(user => user.role === 'admin').length,
+    regularUsers: filteredUsers.filter(user => user.role === 'user').length,
+    sellerUsers: filteredUsers.filter(user => user.role === 'seller').length,
+    deliveryUsers: filteredUsers.filter(user => user.role === 'delivery').length
   };
 
   const getRoleColor = (role: string) => {
-    return role === 'admin' 
-      ? 'text-purple-600 bg-purple-100' 
-      : 'text-blue-600 bg-blue-100';
-  };
-
-  const getRoleIcon = (role: string) => {
-    return role === 'admin' ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />;
-  };
-
-  const handleDeleteUser = (userId: string) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      console.log('Deleting user:', userId);
-      // This would typically make an API call to delete the user
+    switch (role) {
+      case 'admin': return 'text-purple-600 bg-purple-100';
+      case 'seller': return 'text-green-600 bg-green-100';
+      case 'delivery': return 'text-orange-600 bg-orange-100';
+      default: return 'text-blue-600 bg-blue-100';
     }
   };
 
-  const handleToggleRole = (userId: string, currentRole: string) => {
-    const newRole = currentRole === 'admin' ? 'user' : 'admin';
-    console.log(`Changing user ${userId} role to ${newRole}`);
-    // This would typically make an API call to update the user role
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'admin': return <Shield className="h-4 w-4" />;
+      case 'seller': return <Users className="h-4 w-4" />;
+      case 'delivery': return <User className="h-4 w-4" />;
+      default: return <User className="h-4 w-4" />;
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center space-x-3 mb-8">
-          <Users className="h-8 w-8 text-blue-600" />
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Users Management</h1>
-            <p className="text-gray-600">Manage user accounts and permissions</p>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <button
+              onClick={() => navigate('/admin')}
+              className="mr-4 p-2 text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div className="flex items-center space-x-3">
+              <Users className="h-8 w-8 text-blue-600" />
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">Users Management</h1>
+                <p className="text-gray-600">Manage user accounts and permissions</p>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+
+        {/* Search and Filter */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+            <div className="flex-1 max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-gray-400" />
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Roles</option>
+                  <option value="user">Users</option>
+                  <option value="admin">Admins</option>
+                  <option value="seller">Sellers</option>
+                  <option value="delivery">Delivery</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Users Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -119,12 +301,24 @@ const AdminUsersPage: React.FC = () => {
 
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Users className="h-6 w-6 text-yellow-600" />
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Users className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">New This Week</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.newUsersThisWeek}</p>
+                <p className="text-sm font-medium text-gray-600">Sellers</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.sellerUsers}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <User className="h-6 w-6 text-orange-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Delivery</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.deliveryUsers}</p>
               </div>
             </div>
           </div>
@@ -147,10 +341,13 @@ const AdminUsersPage: React.FC = () => {
                     Role
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Joined
+                    Contact
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Last Login
+                    Location
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Joined
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -158,7 +355,7 @@ const AdminUsersPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <tr key={user._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -181,21 +378,31 @@ const AdminUsersPage: React.FC = () => {
                         <span className="capitalize">{user.role}</span>
                       </div>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.phoneNumber ? (
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Phone className="h-4 w-4 text-gray-400 mr-2" />
+                          {user.phoneNumber}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">No phone</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.address?.city ? (
+                        <div className="flex items-center text-sm text-gray-900">
+                          <MapPin className="h-4 w-4 text-gray-400 mr-2" />
+                          {user.address.city}, {user.address.country}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">No address</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(user.lastLogin).toLocaleDateString()}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleToggleRole(user._id, user.role)}
-                          className="text-blue-600 hover:text-blue-900 flex items-center space-x-1"
-                          title={`Change to ${user.role === 'admin' ? 'user' : 'admin'}`}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
                         <button
                           onClick={() => handleDeleteUser(user._id)}
                           className="text-red-600 hover:text-red-900"

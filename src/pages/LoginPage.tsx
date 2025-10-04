@@ -12,6 +12,7 @@ const LoginPage: React.FC = () => {
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<string>('user');
 
   const { email, password } = formData;
 
@@ -41,7 +42,7 @@ const LoginPage: React.FC = () => {
           break;
         case 'user':
         default:
-          navigate('/'); // Navigate to homepage for regular users
+          navigate('/dashboard'); // Navigate to user dashboard
           break;
       }
     }
@@ -62,6 +63,7 @@ const LoginPage: React.FC = () => {
     const userData = {
       email,
       password,
+      role: selectedRole, // Include selected role for role-based login
     };
 
     dispatch(login(userData));
@@ -82,6 +84,43 @@ const LoginPage: React.FC = () => {
             create a new account
           </Link>
         </p>
+        
+        {/* Role selection tabs */}
+        <div className="mt-4 flex rounded-md shadow-sm">
+          <button
+            type="button"
+            onClick={() => setSelectedRole('user')}
+            className={`relative inline-flex items-center px-4 py-2 rounded-l-md border ${
+              selectedRole === 'user' 
+                ? 'bg-blue-600 text-white border-blue-600' 
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            } text-sm font-medium focus:z-10 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 flex-1 justify-center`}
+          >
+            Customer
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedRole('seller')}
+            className={`relative inline-flex items-center px-4 py-2 border-t border-b ${
+              selectedRole === 'seller' 
+                ? 'bg-blue-600 text-white border-blue-600' 
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            } text-sm font-medium focus:z-10 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 flex-1 justify-center`}
+          >
+            Seller
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedRole('delivery')}
+            className={`relative inline-flex items-center px-4 py-2 rounded-r-md border ${
+              selectedRole === 'delivery' 
+                ? 'bg-blue-600 text-white border-blue-600' 
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            } text-sm font-medium focus:z-10 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 flex-1 justify-center`}
+          >
+            Delivery
+          </button>
+        </div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
