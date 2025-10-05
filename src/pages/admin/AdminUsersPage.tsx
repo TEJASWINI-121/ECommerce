@@ -3,6 +3,10 @@ import { Users, Shield, User, Trash2, Edit, Search, Filter, RefreshCw, ArrowLeft
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+<<<<<<< HEAD
+import { API_BASE_URL } from '../../utils/simpleMockData';
+=======
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
 
 interface ApiUser {
   _id: string;
@@ -47,11 +51,21 @@ const AdminUsersPage: React.FC = () => {
 
       console.log('Using token for users API:', token ? 'Token found' : 'No token');
 
+<<<<<<< HEAD
+      // Use API_BASE_URL from imports
+      const response = await axios.get(`${API_BASE_URL}/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 8000 // Increase timeout to prevent connection issues
+=======
       const response = await axios.get('http://localhost:8000/api/users', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
       });
 
       console.log('Users API response:', response.data);
@@ -128,11 +142,20 @@ const AdminUsersPage: React.FC = () => {
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
         const token = currentUser.token || localStorage.getItem('token');
 
+<<<<<<< HEAD
+        await axios.delete(`${API_BASE_URL}/users/${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 8000
+=======
         await axios.delete(`http://localhost:8000/api/users/${userId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
         });
 
         toast.success('User deleted successfully');

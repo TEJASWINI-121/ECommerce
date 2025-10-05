@@ -3,12 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, Upload, X, Plus } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
-<<<<<<< HEAD
 import { API_BASE_URL } from '../../utils/simpleMockData';
-=======
->>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
 
-const AddProductPage: React.FC = () => {
+const SellerAddProductPage: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,11 +33,14 @@ const AddProductPage: React.FC = () => {
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }));
+    const { name, value, type } = e.target as HTMLInputElement;
+    
+    if (type === 'checkbox') {
+      const { checked } = e.target as HTMLInputElement;
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleImageChange = (index: number, value: string) => {
@@ -106,27 +106,21 @@ const AddProductPage: React.FC = () => {
         originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
         stock: parseInt(formData.stock),
         images: formData.images.filter(img => img.trim()),
-        specifications: formData.specifications.filter(spec => spec.key && spec.value)
+        specifications: formData.specifications.filter(spec => spec.key && spec.value),
+        sellerId: localStorage.getItem('userId') // Add seller ID to the product
       };
 
-<<<<<<< HEAD
+      const token = localStorage.getItem('token');
       await axios.post(`${API_BASE_URL}/products`, productData, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         timeout: 8000
-=======
-      await axios.post('http://localhost:8000/api/products', productData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
->>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
       });
 
       toast.success('Product added successfully!');
-      navigate('/admin/products');
+      navigate('/seller/products');
     } catch (error: any) {
       console.error('Error adding product:', error);
       toast.error(error.response?.data?.message || 'Failed to add product');
@@ -141,7 +135,7 @@ const AddProductPage: React.FC = () => {
         {/* Header */}
         <div className="flex items-center mb-8">
           <button
-            onClick={() => navigate('/admin/products')}
+            onClick={() => navigate('/seller/products')}
             className="mr-4 p-2 text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -203,10 +197,10 @@ const AddProductPage: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 >
-                  <option value="">Select Category</option>
-                  {categories.map(category => (
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
                     <option key={category} value={category}>
-                      {category.charAt(0).toUpperCase() + category.slice(1).replace('-', ' ')}
+                      {category.charAt(0).toUpperCase() + category.slice(1)}
                     </option>
                   ))}
                 </select>
@@ -337,7 +331,7 @@ const AddProductPage: React.FC = () => {
                   value={spec.key}
                   onChange={(e) => handleSpecificationChange(index, 'key', e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Specification name (e.g., Color, Size)"
+                  placeholder="Specification name (e.g. Weight)"
                 />
                 <div className="flex items-center space-x-3">
                   <input
@@ -345,7 +339,7 @@ const AddProductPage: React.FC = () => {
                     value={spec.value}
                     onChange={(e) => handleSpecificationChange(index, 'value', e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Specification value (e.g., Red, Large)"
+                    placeholder="Specification value (e.g. 500g)"
                   />
                   {formData.specifications.length > 1 && (
                     <button
@@ -359,22 +353,22 @@ const AddProductPage: React.FC = () => {
                 </div>
               </div>
             ))}
-
+            
             <button
               type="button"
               onClick={addSpecificationField}
               className="flex items-center text-blue-600 hover:text-blue-700"
             >
               <Plus className="h-4 w-4 mr-1" />
-              Add Specification
+              Add Another Specification
             </button>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit Buttons */}
           <div className="flex justify-end space-x-4">
             <button
               type="button"
-              onClick={() => navigate('/admin/products')}
+              onClick={() => navigate('/seller/products')}
               className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
               Cancel
@@ -393,4 +387,4 @@ const AddProductPage: React.FC = () => {
   );
 };
 
-export default AddProductPage;
+export default SellerAddProductPage;

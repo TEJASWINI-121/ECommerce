@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   Package,
   Users,
@@ -15,19 +15,58 @@ import {
   BarChart3,
   Settings,
   CheckCircle,
+<<<<<<< HEAD
+  RefreshCw,
+  ShoppingBag,
+  BarChart2,
+  Calendar,
+  Clock
+=======
   RefreshCw
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
 } from 'lucide-react';
-import { RootState, AppDispatch } from '../../store/store';
+import { RootState } from '../../store/store';
 import { logout } from '../../store/slices/authSlice';
+<<<<<<< HEAD
+import { updateSimpleOrderStatus } from '../../utils/simpleOrders';
+import { addRegisteredUser } from '../../utils/userStorage';
+import { useAdminDashboard } from '../../hooks/useDashboardData';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+=======
 import { getDashboardStats, updateOrderStatus } from '../../store/slices/dashboardSlice';
 import { updateSimpleOrderStatus } from '../../utils/simpleOrders';
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
 
 const AdminDashboard: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { stats, recentOrders, topProducts, topSellers, isLoading } = useSelector((state: RootState) => state.dashboard);
   const [activeTab, setActiveTab] = useState('overview');
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+<<<<<<< HEAD
+
+  // Use the custom hook for admin dashboard data
+  const { 
+    stats, 
+    recentOrders, 
+    topProducts, 
+    topSellers, 
+    loading, 
+    error, 
+    refreshData 
+  } = useAdminDashboard();
+
+  useEffect(() => {
+    // Redirect if not logged in or not an admin
+    if (!user || user.role !== 'admin') {
+      navigate('/');
+    }
+    
+    // Store user in localStorage for accurate counts
+    if (user) {
+      addRegisteredUser(user);
+    }
+  }, [user, navigate]);
+=======
 
   useEffect(() => {
     dispatch(getDashboardStats());
@@ -39,6 +78,7 @@ const AdminDashboard: React.FC = () => {
     
     return () => clearInterval(intervalId);
   }, [dispatch]);
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
 
   const handleLogout = () => {
     dispatch(logout());
@@ -48,11 +88,19 @@ const AdminDashboard: React.FC = () => {
     try {
       setUpdatingOrderId(orderId);
       
+<<<<<<< HEAD
+      // Update in local storage for offline mode
+      await updateSimpleOrderStatus(orderId, newStatus);
+      
+      // Refresh dashboard data after update
+      refreshData();
+=======
       // Update in Redux store
       await dispatch(updateOrderStatus({ orderId, status: newStatus }));
       
       // Also update in local storage for offline mode
       updateSimpleOrderStatus(orderId, newStatus);
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
       
       // Show success notification
       const notification = document.getElementById('notification');
@@ -149,15 +197,24 @@ const AdminDashboard: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Users</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalUsers.toLocaleString()}</p>
+                <div className="mt-2 text-xs text-gray-500">
+                  <div className="flex justify-between">
+                    <span>Customers:</span>
+                    <span>{(stats.totalUsers - stats.totalSellers - stats.totalDeliveryAgents).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Sellers:</span>
+                    <span>{stats.totalSellers.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Delivery:</span>
+                    <span>{stats.totalDeliveryAgents.toLocaleString()}</span>
+                  </div>
+                </div>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
                 <Users className="h-6 w-6 text-blue-600" />
               </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+8%</span>
-              <span className="text-gray-500 ml-1">from last month</span>
             </div>
           </div>
 
@@ -172,9 +229,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+12%</span>
-              <span className="text-gray-500 ml-1">from last month</span>
+              <span className="text-gray-500">Active sellers</span>
             </div>
           </div>
 
@@ -189,9 +244,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+5%</span>
-              <span className="text-gray-500 ml-1">from last month</span>
+              <span className="text-gray-500">Active agents</span>
             </div>
           </div>
 
@@ -200,15 +253,24 @@ const AdminDashboard: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Orders</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
+                <div className="mt-2 text-xs text-gray-500">
+                  <div className="flex justify-between">
+                    <span>Pending:</span>
+                    <span>{stats.pendingOrders}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Shipped:</span>
+                    <span>{stats.shippedOrders}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Delivered:</span>
+                    <span>{stats.deliveredOrders}</span>
+                  </div>
+                </div>
               </div>
               <div className="p-3 bg-orange-100 rounded-full">
                 <ShoppingCart className="h-6 w-6 text-orange-600" />
               </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+15%</span>
-              <span className="text-gray-500 ml-1">from last month</span>
             </div>
           </div>
 
@@ -223,9 +285,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+23%</span>
-              <span className="text-gray-500 ml-1">from last month</span>
+              <span className="text-gray-500">All time revenue</span>
             </div>
           </div>
         </div>
