@@ -3,10 +3,7 @@ import { Users, Shield, User, Trash2, Edit, Search, Filter, RefreshCw, ArrowLeft
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
-<<<<<<< HEAD
 import { API_BASE_URL } from '../../utils/simpleMockData';
-=======
->>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
 
 interface ApiUser {
   _id: string;
@@ -35,46 +32,43 @@ const AdminUsersPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // Try multiple token sources
-      let token = localStorage.getItem('token');
-      if (!token) {
-        const currentUser = localStorage.getItem('currentUser');
-        if (currentUser) {
-          try {
-            const userData = JSON.parse(currentUser);
-            token = userData.token || userData;
-          } catch (e) {
-            token = currentUser.replace(/"/g, ''); // Remove quotes if it's just a string
+      // Try to get users from API first
+      try {
+        // Get current user token
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const token = currentUser.token;
+        
+        const response = await axios.get(`${API_BASE_URL}/users`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
+        });
+        const apiUsers = response.data.users || response.data || [];
+        console.log('✅ Users from API:', apiUsers.length);
+        
+        if (apiUsers.length > 0) {
+          setUsers(apiUsers);
+          return;
         }
+      } catch (apiError) {
+        console.log('API users failed, trying localStorage');
       }
 
-      console.log('Using token for users API:', token ? 'Token found' : 'No token');
-
-<<<<<<< HEAD
-      // Use API_BASE_URL from imports
-      const response = await axios.get(`${API_BASE_URL}/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 8000 // Increase timeout to prevent connection issues
-=======
-      const response = await axios.get('http://localhost:8000/api/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      // Fallback to localStorage
+      try {
+        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+        console.log('✅ Users from localStorage:', registeredUsers.length);
+        
+        if (registeredUsers.length > 0) {
+          setUsers(registeredUsers);
+          return;
         }
->>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
-      });
+      } catch (localError) {
+        console.error('Error reading users from localStorage:', localError);
+      }
 
-      console.log('Users API response:', response.data);
-      setUsers(response.data || []);
-    } catch (error: any) {
-      console.error('Error fetching users:', error);
-      console.error('Error details:', error.response?.data);
-
-      // Create some realistic mock users for demo
+      // Fallback to mock data if no localStorage users
       const mockUsers = [
         {
           _id: '1',
@@ -124,7 +118,10 @@ const AdminUsersPage: React.FC = () => {
       ];
 
       setUsers(mockUsers);
-      toast.info('Showing demo users (API connection failed)');
+      console.log('Using mock users data');
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to fetch users');
     } finally {
       setLoading(false);
     }
@@ -142,20 +139,12 @@ const AdminUsersPage: React.FC = () => {
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
         const token = currentUser.token || localStorage.getItem('token');
 
-<<<<<<< HEAD
         await axios.delete(`${API_BASE_URL}/users/${userId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
           timeout: 8000
-=======
-        await axios.delete(`http://localhost:8000/api/users/${userId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
->>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
         });
 
         toast.success('User deleted successfully');

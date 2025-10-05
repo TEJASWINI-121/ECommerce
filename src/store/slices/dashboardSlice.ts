@@ -64,7 +64,6 @@ export const getDashboardStats = createAsyncThunk(
       const user = getUserFromStorage();
 
       if (!user || !user.token) {
-<<<<<<< HEAD
         console.log('❌ No user token, fetching data from API without authentication');
 
         // Fetch real data from API even without token
@@ -78,40 +77,6 @@ export const getDashboardStats = createAsyncThunk(
           shippedOrders: 0,
           deliveredOrders: 0,
           totalProducts: 0,
-=======
-        console.log('❌ No user token, fetching products directly from API');
-
-        // Fetch real products from API even without token
-        let totalProducts = 0;
-        try {
-          const productsResponse = await axios.get('http://localhost:8000/api/products?pageSize=1000');
-          const products = productsResponse.data.products || productsResponse.data || [];
-          totalProducts = products.length;
-          console.log('✅ Fetched products count:', totalProducts);
-        } catch (error) {
-          console.log('❌ Failed to fetch products, using mock data');
-          const products = getMockProducts();
-          totalProducts = products.length;
-        }
-
-        // Fallback to mock data for other stats
-        const users = getMockUsers();
-        const orders = getMockOrders();
-        const localOrders = JSON.parse(localStorage.getItem('userOrders') || '[]');
-
-        const allOrders = [...orders, ...localOrders];
-
-        const stats = {
-          totalUsers: users.filter(u => u.role === 'user').length,
-          totalSellers: users.filter(u => u.role === 'seller').length,
-          totalDeliveryAgents: users.filter(u => u.role === 'delivery').length,
-          totalOrders: allOrders.length,
-          totalRevenue: allOrders.reduce((sum, order) => sum + order.total, 0),
-          pendingOrders: allOrders.filter(o => o.status === 'pending').length,
-          shippedOrders: allOrders.filter(o => o.status === 'shipped').length,
-          deliveredOrders: allOrders.filter(o => o.status === 'delivered').length,
-          totalProducts: totalProducts,
->>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
         };
         
         let recentOrders: any[] = [];
@@ -206,18 +171,17 @@ export const getDashboardStats = createAsyncThunk(
         };
       }
 
-      console.log('🔄 Fetching dashboard stats from API for role:', role);
-
+      // User has token, try to fetch from API
       const config = {
         headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
+          'Authorization': `Bearer ${user.token}`,
+          'Content-Type': 'application/json'
+        }
       };
 
       try {
         const response = await axios.get(`${API_URL}/${role}`, config);
         console.log('✅ Dashboard stats fetched successfully');
-<<<<<<< HEAD
         
         // Format the response to match our expected structure
         const formattedResponse = {
@@ -282,6 +246,7 @@ export const getDashboardStats = createAsyncThunk(
           console.log('❌ Failed to fetch products, using mock data');
           const products = getMockProducts();
           dashboardData.totalProducts = products.length;
+          topProducts = [];
         }
 
         // 2. Try to get real user data
@@ -340,48 +305,6 @@ export const getDashboardStats = createAsyncThunk(
           topProducts, 
           topSellers 
         };
-=======
-        return response.data;
-      } catch (apiError) {
-        console.log('❌ API failed, fetching products directly and using mock data for other stats');
-
-        // Fetch real products from API
-        let totalProducts = 0;
-        try {
-          const productsResponse = await axios.get('http://localhost:8000/api/products?pageSize=1000');
-          const products = productsResponse.data.products || productsResponse.data || [];
-          totalProducts = products.length;
-          console.log('✅ Fetched products count:', totalProducts);
-        } catch (error) {
-          console.log('❌ Failed to fetch products, using mock data');
-          const products = getMockProducts();
-          totalProducts = products.length;
-        }
-
-        // Use mock data for other stats
-        const users = getMockUsers();
-        const orders = getMockOrders();
-        const localOrders = JSON.parse(localStorage.getItem('userOrders') || '[]');
-        const allOrders = [...orders, ...localOrders];
-
-        const stats = {
-          totalUsers: users.filter(u => u.role === 'user').length,
-          totalSellers: users.filter(u => u.role === 'seller').length,
-          totalDeliveryAgents: users.filter(u => u.role === 'delivery').length,
-          totalOrders: allOrders.length,
-          totalRevenue: allOrders.reduce((sum, order) => sum + order.total, 0),
-          pendingOrders: allOrders.filter(o => o.status === 'pending').length,
-          shippedOrders: allOrders.filter(o => o.status === 'shipped').length,
-          deliveredOrders: allOrders.filter(o => o.status === 'delivered').length,
-          totalProducts: totalProducts,
-        };
-
-        const recentOrders = allOrders
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          .slice(0, 10);
-
-        return { stats, recentOrders, topProducts: [], topSellers: [] };
->>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
       }
     } catch (error: any) {
       const message = error.message || error.toString();
@@ -395,14 +318,31 @@ export const updateOrderStatus = createAsyncThunk(
   'dashboard/updateOrderStatus',
   async ({ orderId, status }: { orderId: string; status: string }, thunkAPI) => {
     try {
-      // Update in localStorage
-      const localOrders = JSON.parse(localStorage.getItem('userOrders') || '[]');
-      const updatedOrders = localOrders.map((order: any) => 
-        order._id === orderId ? { ...order, status, updatedAt: new Date().toISOString() } : order
-      );
-      localStorage.setItem('userOrders', JSON.stringify(updatedOrders));
+      const user = getUserFromStorage();
       
-      return { orderId, status };
+      if (!user || !user.token) {
+        // Update in localStorage if no token
+        const localOrders = JSON.parse(localStorage.getItem('userOrders') || '[]');
+        const updatedOrders = localOrders.map((order: any) => 
+          order.id === orderId ? { ...order, status } : order
+        );
+        localStorage.setItem('userOrders', JSON.stringify(updatedOrders));
+        return { orderId, status };
+      }
+
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${user.token}`,
+          'Content-Type': 'application/json'
+        }
+      };
+
+      const response = await axios.put(`http://localhost:8000/api/orders/${orderId}/status`, 
+        { status }, 
+        config
+      );
+      
+      return response.data;
     } catch (error: any) {
       const message = error.message || error.toString();
       return thunkAPI.rejectWithValue(message);
@@ -410,7 +350,7 @@ export const updateOrderStatus = createAsyncThunk(
   }
 );
 
-export const dashboardSlice = createSlice({
+const dashboardSlice = createSlice({
   name: 'dashboard',
   initialState,
   reducers: {
@@ -431,6 +371,7 @@ export const dashboardSlice = createSlice({
         state.recentOrders = action.payload.recentOrders;
         state.topProducts = action.payload.topProducts;
         state.topSellers = action.payload.topSellers;
+        state.isError = false;
       })
       .addCase(getDashboardStats.rejected, (state, action) => {
         state.isLoading = false;
@@ -438,12 +379,24 @@ export const dashboardSlice = createSlice({
         state.message = action.payload as string;
       })
       .addCase(updateOrderStatus.fulfilled, (state, action) => {
-        // Update the order status in recent orders
-        state.recentOrders = state.recentOrders.map(order =>
-          order._id === action.payload.orderId
-            ? { ...order, status: action.payload.status }
+        // Update the order status in recentOrders
+        const orderId = action.payload.orderId || action.payload._id;
+        const status = action.payload.status || action.payload.orderStatus;
+        
+        state.recentOrders = state.recentOrders.map(order => 
+          order.id === orderId || order._id === orderId 
+            ? { ...order, status, orderStatus: status }
             : order
         );
+        
+        // Update stats
+        const pendingCount = state.recentOrders.filter(o => o.status === 'pending' || o.orderStatus === 'pending').length;
+        const shippedCount = state.recentOrders.filter(o => o.status === 'shipped' || o.orderStatus === 'shipped').length;
+        const deliveredCount = state.recentOrders.filter(o => o.status === 'delivered' || o.orderStatus === 'delivered').length;
+        
+        state.stats.pendingOrders = pendingCount;
+        state.stats.shippedOrders = shippedCount;
+        state.stats.deliveredOrders = deliveredCount;
       });
   },
 });

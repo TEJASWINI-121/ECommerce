@@ -28,10 +28,6 @@ const categories = [
   { value: 'beauty', label: 'Beauty & Personal Care', icon: Sparkles },
   { value: 'home-decor', label: 'Home & Kitchen', icon: Home },
   { value: 'sports', label: 'Sports & Fitness', icon: Dumbbell },
-  { value: 'books', label: 'Books & Media', icon: ShoppingBag },
-  { value: 'automotive', label: 'Automotive', icon: ShoppingBag },
-  { value: 'toys', label: 'Toys & Games', icon: ShoppingBag },
-  { value: 'pets', label: 'Pet Supplies', icon: ShoppingBag },
 ];
 
 const promotionalBanners = [

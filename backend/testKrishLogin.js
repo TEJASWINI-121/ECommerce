@@ -11,7 +11,7 @@ const testKrishLogin = async () => {
       password: 'krish123'
     });
     
-    console.log('✅ Login successful!');
+    console.log('✅ Login successful done!');
     console.log('👤 User:', loginResponse.data.name);
     console.log('📧 Email:', loginResponse.data.email);
     console.log('🔑 Token:', loginResponse.data.token ? 'Present' : 'Missing');

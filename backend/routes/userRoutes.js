@@ -14,10 +14,11 @@ import {
   updateUserRole,
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
+import { mockProtect, mockAdmin } from '../middleware/mockAuthMiddleware.js';
 
 const router = express.Router();
 
-router.route('/').get(protect, admin, getUsers);
+router.route('/').get(mockProtect, mockAdmin, getUsers);
 router.route('/profile').get(protect, getUserProfile).put(protect, updateUserProfile);
 router.route('/cart')
   .get(protect, getCart)

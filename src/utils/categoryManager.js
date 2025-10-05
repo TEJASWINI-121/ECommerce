@@ -11,12 +11,9 @@ export const PRODUCT_CATEGORIES = [
   'clothing',
   'home',
   'beauty',
-  'books',
-  'toys',
   'sports',
   'grocery',
-  'furniture',
-  'automotive'
+  'furniture'
 ];
 
 // Sub-categories for each main category

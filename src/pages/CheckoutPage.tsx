@@ -7,7 +7,6 @@ import { RootState, AppDispatch } from '../store/store';
 import { createOrder } from '../store/slices/orderSlice';
 import { clearCart } from '../store/slices/cartSlice';
 import { getSimpleCart, getSimpleCartTotal } from '../utils/simpleCart';
-import { createSimpleOrder } from '../utils/simpleOrders';
 
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
@@ -65,18 +64,37 @@ const CheckoutPage: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      console.log('🛒 Creating simple order...');
+      console.log('🛒 Creating order...');
 
-      // Create order using simple system
-      const order = createSimpleOrder({
-        shippingAddress,
-        paymentMethod
-      });
+      // Prepare order data for MongoDB
+      const orderData = {
+        orderItems: simpleCartItems.map(item => ({
+          _id: item._id,
+          name: item.name,
+          quantity: item.quantity,
+          image: item.images?.[0] || '/images/placeholder.jpg',
+          price: item.price
+        })),
+        shippingAddress: {
+          address: shippingAddress.address,
+          city: shippingAddress.city,
+          postalCode: shippingAddress.postalCode,
+          country: shippingAddress.country
+        },
+        paymentMethod,
+        itemsPrice: subtotal,
+        taxPrice: tax,
+        shippingPrice: shipping,
+        totalPrice: total
+      };
 
-      if (order) {
-        console.log('✅ Simple order created:', order._id);
+      // Use Redux createOrder to save to MongoDB
+      const result = await dispatch(createOrder(orderData));
+      
+      if (result.type === 'orders/createOrder/fulfilled') {
+        console.log('✅ Order created successfully:', result.payload);
         toast.success('Order placed successfully!');
-        navigate(`/order-success?orderId=${order._id}`);
+        navigate(`/order-success?orderId=${result.payload._id}`);
       } else {
         throw new Error('Failed to create order');
       }
