@@ -12,7 +12,7 @@ const testOrderCreation = async () => {
     });
     
     const token = loginResponse.data.token;
-    console.log('✅ Login is successful');
+    console.log('✅ Login successful');
     
     // Step 2: Get a product for the order
     console.log('\n2. Getting product...');
