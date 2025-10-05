@@ -15,24 +15,34 @@ import {
   BarChart3,
   Settings,
   CheckCircle,
+<<<<<<< HEAD
   RefreshCw,
   ShoppingBag,
   BarChart2,
   Calendar,
   Clock
+=======
+  RefreshCw
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
 } from 'lucide-react';
 import { RootState } from '../../store/store';
 import { logout } from '../../store/slices/authSlice';
+<<<<<<< HEAD
 import { updateSimpleOrderStatus } from '../../utils/simpleOrders';
 import { addRegisteredUser } from '../../utils/userStorage';
 import { useAdminDashboard } from '../../hooks/useDashboardData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+=======
+import { getDashboardStats, updateOrderStatus } from '../../store/slices/dashboardSlice';
+import { updateSimpleOrderStatus } from '../../utils/simpleOrders';
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
   const [activeTab, setActiveTab] = useState('overview');
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+<<<<<<< HEAD
 
   // Use the custom hook for admin dashboard data
   const { 
@@ -56,6 +66,19 @@ const AdminDashboard: React.FC = () => {
       addRegisteredUser(user);
     }
   }, [user, navigate]);
+=======
+
+  useEffect(() => {
+    dispatch(getDashboardStats());
+    
+    // Refresh dashboard data every 30 seconds to show new orders
+    const intervalId = setInterval(() => {
+      dispatch(getDashboardStats());
+    }, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, [dispatch]);
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
 
   const handleLogout = () => {
     dispatch(logout());
@@ -65,11 +88,19 @@ const AdminDashboard: React.FC = () => {
     try {
       setUpdatingOrderId(orderId);
       
+<<<<<<< HEAD
       // Update in local storage for offline mode
       await updateSimpleOrderStatus(orderId, newStatus);
       
       // Refresh dashboard data after update
       refreshData();
+=======
+      // Update in Redux store
+      await dispatch(updateOrderStatus({ orderId, status: newStatus }));
+      
+      // Also update in local storage for offline mode
+      updateSimpleOrderStatus(orderId, newStatus);
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
       
       // Show success notification
       const notification = document.getElementById('notification');

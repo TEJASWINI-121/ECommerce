@@ -64,6 +64,7 @@ export const getDashboardStats = createAsyncThunk(
       const user = getUserFromStorage();
 
       if (!user || !user.token) {
+<<<<<<< HEAD
         console.log('❌ No user token, fetching data from API without authentication');
 
         // Fetch real data from API even without token
@@ -77,6 +78,40 @@ export const getDashboardStats = createAsyncThunk(
           shippedOrders: 0,
           deliveredOrders: 0,
           totalProducts: 0,
+=======
+        console.log('❌ No user token, fetching products directly from API');
+
+        // Fetch real products from API even without token
+        let totalProducts = 0;
+        try {
+          const productsResponse = await axios.get('http://localhost:8000/api/products?pageSize=1000');
+          const products = productsResponse.data.products || productsResponse.data || [];
+          totalProducts = products.length;
+          console.log('✅ Fetched products count:', totalProducts);
+        } catch (error) {
+          console.log('❌ Failed to fetch products, using mock data');
+          const products = getMockProducts();
+          totalProducts = products.length;
+        }
+
+        // Fallback to mock data for other stats
+        const users = getMockUsers();
+        const orders = getMockOrders();
+        const localOrders = JSON.parse(localStorage.getItem('userOrders') || '[]');
+
+        const allOrders = [...orders, ...localOrders];
+
+        const stats = {
+          totalUsers: users.filter(u => u.role === 'user').length,
+          totalSellers: users.filter(u => u.role === 'seller').length,
+          totalDeliveryAgents: users.filter(u => u.role === 'delivery').length,
+          totalOrders: allOrders.length,
+          totalRevenue: allOrders.reduce((sum, order) => sum + order.total, 0),
+          pendingOrders: allOrders.filter(o => o.status === 'pending').length,
+          shippedOrders: allOrders.filter(o => o.status === 'shipped').length,
+          deliveredOrders: allOrders.filter(o => o.status === 'delivered').length,
+          totalProducts: totalProducts,
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
         };
         
         let recentOrders: any[] = [];
@@ -182,6 +217,7 @@ export const getDashboardStats = createAsyncThunk(
       try {
         const response = await axios.get(`${API_URL}/${role}`, config);
         console.log('✅ Dashboard stats fetched successfully');
+<<<<<<< HEAD
         
         // Format the response to match our expected structure
         const formattedResponse = {
@@ -304,6 +340,48 @@ export const getDashboardStats = createAsyncThunk(
           topProducts, 
           topSellers 
         };
+=======
+        return response.data;
+      } catch (apiError) {
+        console.log('❌ API failed, fetching products directly and using mock data for other stats');
+
+        // Fetch real products from API
+        let totalProducts = 0;
+        try {
+          const productsResponse = await axios.get('http://localhost:8000/api/products?pageSize=1000');
+          const products = productsResponse.data.products || productsResponse.data || [];
+          totalProducts = products.length;
+          console.log('✅ Fetched products count:', totalProducts);
+        } catch (error) {
+          console.log('❌ Failed to fetch products, using mock data');
+          const products = getMockProducts();
+          totalProducts = products.length;
+        }
+
+        // Use mock data for other stats
+        const users = getMockUsers();
+        const orders = getMockOrders();
+        const localOrders = JSON.parse(localStorage.getItem('userOrders') || '[]');
+        const allOrders = [...orders, ...localOrders];
+
+        const stats = {
+          totalUsers: users.filter(u => u.role === 'user').length,
+          totalSellers: users.filter(u => u.role === 'seller').length,
+          totalDeliveryAgents: users.filter(u => u.role === 'delivery').length,
+          totalOrders: allOrders.length,
+          totalRevenue: allOrders.reduce((sum, order) => sum + order.total, 0),
+          pendingOrders: allOrders.filter(o => o.status === 'pending').length,
+          shippedOrders: allOrders.filter(o => o.status === 'shipped').length,
+          deliveredOrders: allOrders.filter(o => o.status === 'delivered').length,
+          totalProducts: totalProducts,
+        };
+
+        const recentOrders = allOrders
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 10);
+
+        return { stats, recentOrders, topProducts: [], topSellers: [] };
+>>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
       }
     } catch (error: any) {
       const message = error.message || error.toString();
