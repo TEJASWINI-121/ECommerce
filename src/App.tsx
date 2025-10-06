@@ -31,13 +31,8 @@ const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage'));
 const OrderPage = lazy(() => import('./pages/OrderPage'));
 const OrderHistoryPage = lazy(() => import('./pages/OrderHistoryPage'));
 const UserDashboard = lazy(() => import('./pages/UserDashboard'));
-<<<<<<< HEAD
-const SellerDashboard = lazy(() => import('./pages/seller/SellerDashboard'));
-const DeliveryDashboard = lazy(() => import('./pages/delivery/DeliveryDashboard'));
-=======
 const SellerDashboard = lazy(() => import('./pages/SellerDashboard'));
 const DeliveryDashboard = lazy(() => import('./pages/DeliveryDashboard'));
->>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
 
 // Lazy load admin pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -78,21 +73,14 @@ function App() {
                 <Route path="/user-dashboard" element={<PrivateRoute><UserDashboard /></PrivateRoute>} />
 
                 {/* Seller Dashboard */}
-<<<<<<< HEAD
-                <Route path="/seller/dashboard" element={<SellerRoute><SellerDashboard /></SellerRoute>} />
-
-                {/* Delivery Dashboard */}
-                <Route path="/delivery/dashboard" element={<DeliveryRoute><DeliveryDashboard /></DeliveryRoute>} />
-=======
                 <Route path="/seller-dashboard" element={<SellerRoute><SellerDashboard /></SellerRoute>} />
 
                 {/* Delivery Dashboard */}
                 <Route path="/delivery-dashboard" element={<DeliveryRoute><DeliveryDashboard /></DeliveryRoute>} />
->>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<AdminRoute><EnhancedAdminDashboard /></AdminRoute>} />
-                <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                <Route path="/admin/dashboard" element={<AdminRoute><EnhancedAdminDashboard /></AdminRoute>} />
                 <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
                 <Route path="/admin/products/add" element={<AdminRoute><AddProductPage /></AdminRoute>} />
                 <Route path="/admin/products-old" element={<AdminRoute><AdminProductsPage /></AdminRoute>} />

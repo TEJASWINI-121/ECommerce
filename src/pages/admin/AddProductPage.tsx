@@ -3,10 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, Upload, X, Plus } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
-<<<<<<< HEAD
 import { API_BASE_URL } from '../../utils/simpleMockData';
-=======
->>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
 
 const AddProductPage: React.FC = () => {
   const navigate = useNavigate();
@@ -109,20 +106,12 @@ const AddProductPage: React.FC = () => {
         specifications: formData.specifications.filter(spec => spec.key && spec.value)
       };
 
-<<<<<<< HEAD
       await axios.post(`${API_BASE_URL}/products`, productData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
         },
         timeout: 8000
-=======
-      await axios.post('http://localhost:8000/api/products', productData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
->>>>>>> 6efe5dd087e7a60cc0236e76359a458237a29c01
       });
 
       toast.success('Product added successfully!');

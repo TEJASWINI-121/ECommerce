@@ -1,47 +1,126 @@
-import React from 'react';
-import { ShoppingCart, Eye, Package, Truck, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart, Eye, Package, Truck, CheckCircle, RefreshCw, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import axios from 'axios';
+import { API_BASE_URL } from '../../utils/simpleMockData';
+
+interface Order {
+  _id: string;
+  user: { _id: string; name: string; email: string };
+  orderItems: Array<{
+    _id: string;
+    name: string;
+    quantity: number;
+    price: number;
+    product: string;
+  }>;
+  totalPrice: number;
+  orderStatus: string;
+  isPaid: boolean;
+  isDelivered: boolean;
+  createdAt: string;
+  paidAt?: string;
+  deliveredAt?: string;
+}
 
 const AdminOrdersPage: React.FC = () => {
-  // Mock data - in a real app, this would come from your API
-  const orders = [
-    {
-      _id: '1',
-      user: { name: 'John Doe', email: 'john@example.com' },
-      orderItems: [
-        { name: 'Apple iPhone 15 Pro', quantity: 1, price: 999.99 },
-        { name: 'AirPods Pro', quantity: 1, price: 249.99 }
-      ],
-      totalPrice: 1249.98,
-      orderStatus: 'pending',
-      isPaid: false,
-      isDelivered: false,
-      createdAt: '2024-01-15T10:30:00Z'
-    },
-    {
-      _id: '2',
-      user: { name: 'Jane Smith', email: 'jane@example.com' },
-      orderItems: [
-        { name: 'Nike Air Max 270', quantity: 1, price: 120.00 }
-      ],
-      totalPrice: 120.00,
-      orderStatus: 'shipped',
-      isPaid: true,
-      isDelivered: false,
-      createdAt: '2024-01-14T14:20:00Z'
-    },
-    {
-      _id: '3',
-      user: { name: 'Bob Johnson', email: 'bob@example.com' },
-      orderItems: [
-        { name: 'Sony WH-1000XM5', quantity: 1, price: 299.99 }
-      ],
-      totalPrice: 299.99,
-      orderStatus: 'delivered',
-      isPaid: true,
-      isDelivered: true,
-      createdAt: '2024-01-13T09:15:00Z'
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      
+      // Get token from localStorage
+      let token = localStorage.getItem('token');
+      if (!token) {
+        const currentUser = localStorage.getItem('currentUser');
+        if (currentUser) {
+          try {
+            const userData = JSON.parse(currentUser);
+            token = userData.token || userData;
+          } catch (e) {
+            token = currentUser.replace(/"/g, '');
+          }
+        }
+      }
+
+      console.log('Using token for orders API:', token ? 'Token found' : 'No token');
+
+      const response = await axios.get(`${API_BASE_URL}/orders`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 8000
+      });
+
+      console.log('Orders API response:', response.data);
+      setOrders(response.data || []);
+    } catch (error: any) {
+      console.error('Error fetching orders:', error);
+      console.error('Error details:', error.response?.data);
+
+      // Fallback to mock data if API fails
+      const mockOrders: Order[] = [
+        {
+          _id: '1',
+          user: { _id: 'user1', name: 'John Doe', email: 'john@example.com' },
+          orderItems: [
+            { _id: 'item1', name: 'Apple iPhone 15 Pro', quantity: 1, price: 999.99, product: 'prod1' },
+            { _id: 'item2', name: 'AirPods Pro', quantity: 1, price: 249.99, product: 'prod2' }
+          ],
+          totalPrice: 1249.98,
+          orderStatus: 'pending',
+          isPaid: false,
+          isDelivered: false,
+          createdAt: '2024-01-15T10:30:00Z'
+        },
+        {
+          _id: '2',
+          user: { _id: 'user2', name: 'Jane Smith', email: 'jane@example.com' },
+          orderItems: [
+            { _id: 'item3', name: 'Nike Air Max 270', quantity: 1, price: 120.00, product: 'prod3' }
+          ],
+          totalPrice: 120.00,
+          orderStatus: 'shipped',
+          isPaid: true,
+          isDelivered: false,
+          createdAt: '2024-01-14T14:20:00Z'
+        },
+        {
+          _id: '3',
+          user: { _id: 'user3', name: 'Bob Johnson', email: 'bob@example.com' },
+          orderItems: [
+            { _id: 'item4', name: 'Sony WH-1000XM5', quantity: 1, price: 299.99, product: 'prod4' }
+          ],
+          totalPrice: 299.99,
+          orderStatus: 'delivered',
+          isPaid: true,
+          isDelivered: true,
+          createdAt: '2024-01-13T09:15:00Z'
+        }
+      ];
+
+      setOrders(mockOrders);
+      toast.info('Showing demo orders (API connection failed)');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchOrders();
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -71,24 +150,104 @@ const AdminOrdersPage: React.FC = () => {
     }
   };
 
-  const updateOrderStatus = (orderId: string, newStatus: string) => {
-    console.log(`Updating order ${orderId} to ${newStatus}`);
-    // This would typically make an API call to update the order
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      let token = localStorage.getItem('token');
+      if (!token) {
+        const currentUser = localStorage.getItem('currentUser');
+        if (currentUser) {
+          try {
+            const userData = JSON.parse(currentUser);
+            token = userData.token || userData;
+          } catch (e) {
+            token = currentUser.replace(/"/g, '');
+          }
+        }
+      }
+
+      await axios.put(`${API_BASE_URL}/orders/${orderId}/status`, 
+        { status: newStatus },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 8000
+        }
+      );
+
+      toast.success('Order status updated successfully');
+      fetchOrders(); // Refresh the orders list
+    } catch (error: any) {
+      console.error('Error updating order status:', error);
+      toast.error('Failed to update order status');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading orders...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate order statistics
+  const orderStats = {
+    pending: orders.filter(order => order.orderStatus === 'pending').length,
+    processing: orders.filter(order => order.orderStatus === 'processing').length,
+    shipped: orders.filter(order => order.orderStatus === 'shipped').length,
+    delivered: orders.filter(order => order.orderStatus === 'delivered').length,
+    total: orders.length
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center space-x-3 mb-8">
-          <ShoppingCart className="h-8 w-8 text-blue-600" />
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Orders Management</h1>
-            <p className="text-gray-600">View and manage customer orders</p>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <button
+              onClick={() => navigate('/admin')}
+              className="mr-4 p-2 text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div className="flex items-center space-x-3">
+              <ShoppingCart className="h-8 w-8 text-blue-600" />
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">Orders Management</h1>
+                <p className="text-gray-600">View and manage customer orders</p>
+              </div>
+            </div>
           </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
         </div>
 
         {/* Orders Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <ShoppingCart className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Orders</p>
+                <p className="text-2xl font-bold text-gray-900">{orderStats.total}</p>
+              </div>
+            </div>
+          </div>
+          
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center">
               <div className="p-2 bg-gray-100 rounded-lg">
@@ -96,7 +255,7 @@ const AdminOrdersPage: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-gray-900">12</p>
+                <p className="text-2xl font-bold text-gray-900">{orderStats.pending}</p>
               </div>
             </div>
           </div>
@@ -108,7 +267,7 @@ const AdminOrdersPage: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Processing</p>
-                <p className="text-2xl font-bold text-gray-900">8</p>
+                <p className="text-2xl font-bold text-gray-900">{orderStats.processing}</p>
               </div>
             </div>
           </div>
@@ -120,7 +279,7 @@ const AdminOrdersPage: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Shipped</p>
-                <p className="text-2xl font-bold text-gray-900">15</p>
+                <p className="text-2xl font-bold text-gray-900">{orderStats.shipped}</p>
               </div>
             </div>
           </div>
@@ -132,7 +291,7 @@ const AdminOrdersPage: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Delivered</p>
-                <p className="text-2xl font-bold text-gray-900">42</p>
+                <p className="text-2xl font-bold text-gray-900">{orderStats.delivered}</p>
               </div>
             </div>
           </div>

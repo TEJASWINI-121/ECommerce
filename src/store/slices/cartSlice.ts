@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { getCartFromStorage, saveCartToStorage, clearCart } from '../../utils/localStorage';
 
-const API_URL = 'http://localhost:8000/api/users';
+const API_URL = `${import.meta.env.VITE_API_URL}/users`;
 
 interface CartItem {
   product: {
