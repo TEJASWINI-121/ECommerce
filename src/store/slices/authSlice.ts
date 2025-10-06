@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { saveUserToStorage, getCurrentUser, removeCurrentUser, clearAllUserData } from '../../utils/localStorage';
 
-const API_URL = 'http://localhost:8000/api/auth';
+const API_URL = `${import.meta.env.VITE_API_URL}/auth`;
 
 // Mock users for different roles
 const MOCK_USERS = [

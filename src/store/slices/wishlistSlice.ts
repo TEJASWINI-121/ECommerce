@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { API_BASE_URL } from '../../utils/simpleMockData';
 
-const API_URL = `${API_BASE_URL}/users`;
+const API_URL = `${import.meta.env.VITE_API_URL}/users`;
 
 // Get user from localStorage
 const getUserFromStorage = () => {

@@ -21,7 +21,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const navigate = useNavigate();
   
   // API endpoint for product search
-  const API_URL = 'http://localhost:8000/api/products';
+  const API_URL = `${import.meta.env.VITE_API_URL}/products`;;
 
   // Popular search suggestions
   const popularSearches = [

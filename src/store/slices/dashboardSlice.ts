@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { MOCK_ORDERS, MOCK_PRODUCTS, MOCK_USERS, getMockOrders, getMockProducts, getMockUsers } from '../../utils/mockData';
 
-const API_URL = 'http://localhost:8000/api/dashboard';
+const API_URL = `${import.meta.env.VITE_API_URL}/dashboard`;
 
 interface DashboardStats {
   totalUsers: number;

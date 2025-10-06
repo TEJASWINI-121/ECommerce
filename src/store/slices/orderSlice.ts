@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { MOCK_ORDERS, MockOrder } from '../../utils/mockData';
 
-const API_URL = 'http://localhost:8000/api/orders';
+const API_URL = `${import.meta.env.VITE_API_URL}/orders`;
 
 // Helper functions for localStorage
 const saveOrderToStorage = (order: any) => {
