@@ -34,7 +34,8 @@ const testOrderCreation = async () => {
         address: '123 Test Street',
         city: 'Test City',
         postalCode: '12345',
-        country: 'USA'
+        country: 'USA',
+        email: 'tejaswinikv.23it@kongu.edu'
       },
       paymentMethod: 'Cash on Delivery',
       itemsPrice: product.price * 2,
